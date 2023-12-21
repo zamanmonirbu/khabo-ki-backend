@@ -22,22 +22,8 @@ const foodSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    variants: {
-        type: [String],
-        required: true
-    },
-    prices: [
-        {
-          size: {
-            type: String,
-            required: true
-          },
-          price: {
-            type: Number,
-            required: true
-          }
-        }
-      ],
+    variants: [],
+    prices: [],
     category: {
         type: String,
         required: true
@@ -50,6 +36,8 @@ const foodSchema = new mongoose.Schema({
         type: String,
         required: true
     }
+},{
+  timestamps:true,
 });
 
 const Food = mongoose.model('Food', foodSchema);
