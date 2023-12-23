@@ -1,60 +1,75 @@
-const express = require('express')
+const express = require("express");
 const app = express();
-const dotenv = require('dotenv');
-const mongoose = require('mongoose');
-const bodyParser = require('body-parser')
-const stripe = require('stripe')("sk_test_51OQBiWIHoIMM5DdU1utEYQkdD6Ca9ZETR2rrRxfkQVnOWOqOVn0p7Hg8z9xV0xdZoNZAoOw4zHoVIEctDHdr1LWQ00Yw6YVHII");
-const { v4: uuidv4 } = require('uuid');
+const dotenv = require("dotenv");
+const mongoose = require("mongoose");
+const bodyParser = require("body-parser");
+const stripe = require("stripe")(
+  "sk_test_51OQBiWIHoIMM5DdU1utEYQkdD6Ca9ZETR2rrRxfkQVnOWOqOVn0p7Hg8z9xV0xdZoNZAoOw4zHoVIEctDHdr1LWQ00Yw6YVHII"
+);
+const { v4: uuidv4 } = require("uuid");
 dotenv.config();
-app.use(express.json())
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
-const cors = require('cors')
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+const cors = require("cors");
 app.use(cors());
-
 
 const port = process.env.PORT;
 const url = process.env.URL;
 
+mongoose
+  .connect(
+    "mongodb+srv://monir1181:monir1181087@cluster0.fwfzjhi.mongodb.net/ki-khabo?retryWrites=true&w=majority"
+  )
+  .then((res) => {
+    console.log("Connected");
+  })
+  .catch((err) => {
+    console.log("Can't connect", err);
+  });
 
-mongoose.connect(url).then((res) => { console.log("Connected") }).catch((err) => { console.log("Can't connect", err); })
-
-const foodSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
+const foodSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    variants: [],
+    prices: [],
+    category: {
+      type: String,
+      required: true,
+    },
+    image: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
   },
-  variants: [],
-  prices: [],
-  category: {
-    type: String,
-    required: true
-  },
-  image: {
-    type: String,
-    required: true
-  },
-  description: {
-    type: String,
-    required: true
+  {
+    timestamps: true,
   }
-}, {
-  timestamps: true,
-});
+);
 
-const userSchema = mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  password: { type: String, required: true },
-  isAdmin: { type: Boolean, default: false }
-}, {
-  timestamps: true,
-});
+const userSchema = mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    password: { type: String, required: true },
+    isAdmin: { type: Boolean, default: false },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-const Food = mongoose.model('Food', foodSchema);
-const User = mongoose.model('User', userSchema);
+const Food = mongoose.model("Food", foodSchema);
+const User = mongoose.model("User", userSchema);
 
-app.post('/api/user/register', async (req, res) => {
+app.post("/api/user/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
     const newUser = new User({ name, email, password });
@@ -72,32 +87,39 @@ app.post('/api/user/register', async (req, res) => {
   }
 });
 
-
-app.get('/api/food/getFoods', async (req, res) => {
+app.get("/api/food/getFoods", async (req, res) => {
   try {
     const data = await Food.find();
-    res.status(200).json(data)
-
+    res.status(200).json(data);
   } catch (error) {
-    res.status(500).json("Internal server error")
+    res.status(500).json("Internal server error");
   }
 });
 
-app.post('/', async (req, res) => {
+app.post("/", async (req, res) => {
   try {
     const { name, variants, prices, category, image, description } = req.body;
-    const newData = new Food({ name, variants, prices, category, image, description });
+    const newData = new Food({
+      name,
+      variants,
+      prices,
+      category,
+      image,
+      description,
+    });
     const save = await newData.save();
 
     if (save) {
       res.status(200).json(save);
     }
   } catch (error) {
-    res.status(500).json({ error: "Internal server error", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Internal server error", details: error.message });
   }
 });
 
-app.post('/api/user/login', async (req, res) => {
+app.post("/api/user/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email, password });
@@ -106,101 +128,110 @@ app.post('/api/user/login', async (req, res) => {
         name: user.name,
         email: user.email,
         _id: user._id,
-        isAdmin: user.isAdmin
-
-      }
+        isAdmin: user.isAdmin,
+      };
       res.json(currentUser);
     } else {
-      res.status(401).json({ success: false, message: 'Invalid credentials' });
+      res.status(401).json({ success: false, message: "Invalid credentials" });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
-app.post('/api/orders/placeorder', async (req, res) => {
+app.post("/api/orders/placeorder", async (req, res) => {
   const { token, subTotal, currentUser, cartItems } = req.body;
-
   try {
     const customer = await stripe.customers.create({
       email: token.email,
-      source: token.id
+      source: token.id,
     });
 
-    const payment = await stripe.charges.create({
-      amount: subTotal * 100,
-      currency: 'inr',
-      customer: customer.id,
-      receipt_email: token.email
-    }, {
-      idempotencyKey: uuidv4()
-    });
-console.log("hello",currentUser.name,
-        currentUser.email,
-        currentUser._id,
-        cartItems,
-        subTotal,token);
-
-    const newOrder = new Order({
+    const payment = await stripe.charges.create(
+      {
+        amount: subTotal * 100,
+        currency: "inr",
+        customer: customer.id,
+        receipt_email: token.email,
+      },
+      {
+        idempotencyKey: uuidv4(),
+      }
+    );
+    if (payment) {
+      const newOrder = new Order({
         name: currentUser.name,
         email: currentUser.email,
         userid: currentUser._id,
         orderItems: cartItems,
         orderAmount: subTotal,
         shippingAddress: {
-          street: token.cart.address_line1,
-          city: token.cart.address_city,
-          country: token.cart.address_country,
-          pincode: token.cart.address_zip,
+          street: token.card.address_line1,
+          city: token.card.address_city,
+          country: token.card.address_country,
+          pincode: token.card.address_zip,
         },
         transactionId: payment.source.id,
       });
-      console.log("OrderDetails",newOrder);
 
-    // if (payment) {
-    //   // console.log(payment);
-
-    //   const newOrder = new Order({
-    //     name: currentUser.name,
-    //     email: currentUser.email,
-    //     userid: currentUser._id,
-    //     orderItems: cartItems,
-    //     orderAmount: subTotal,
-    //     shippingAddress: {
-    //       street: token.cart.address_line1,
-    //       city: token.cart.address_city,
-    //       country: token.cart.address_country,
-    //       pincode: token.cart.address_zip,
-    //     },
-    //     transactionId: payment.source.id,
-    //   });
-    //   console.log("OrderDetails",newOrder);
-    //   // await newOrder.save();
-    //   res.send("Payment success");
-    // } else {
-    //   res.send("Payment failed");
-    // }
+      const result = await newOrder.save();
+      if (result) {
+        res.send("Payment success");
+      }
+    }
   } catch (error) {
     return res.status(400).json(error);
   }
 });
 
-const orderSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  userid: { type: String, required: true },
-  orderItems: { type: Array, required: true },
-  shippingAddress: { type: Object },
-  orderAmount: { type: Number, required: true },
-  isDelivered: { type: Boolean, required: true, default: false },
-  transactionId: { type: String, required: true }
-}, {
-  timestamps: true
-});
+const orderSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    email: { type: String, required: true },
+    userid: { type: String, required: true },
+    orderItems: { type: Array, required: true },
+    shippingAddress: { type: Object },
+    orderAmount: { type: Number, required: true },
+    isDelivered: { type: Boolean, required: true, default: false },
+    transactionId: { type: String, required: true },
+  },
+  {
+    timestamps: true,
+  }
+);
 
 const Order = mongoose.model("Order", orderSchema);
 
+app.post("/api/orders/getuserorders", async (req, res) => {
+  const { userid } = req.body;
+  try {
+    const orders = await Order.find({ userid: userid }).sort({ _id: -1 });
+    res.send(orders);
+  } catch (error) {
+    return res.status(400).json({ message: "Something went wrong" });
+  }
+});
+
+app.post("/api/food/addfood", async (req, res) => {
+ try {
+  
+  const food = req.body.food;
+  const newFood = new Food({
+    name: food.name,
+    image: food.image,
+    description: food.description,
+    category: food.category,
+    prices: [food.prices],
+    variants: ["small", "medium", "large"],
+  });
+  await newFood.save();
+  res.send("Food Added")
+
+ } catch (error) {
+  return res.send({message:"Something went wrong"})
+ }
+});
 
 app.listen(port, () => {
   console.log("http://localhost:3001");
-})
+});
