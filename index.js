@@ -213,23 +213,68 @@ app.post("/api/orders/getuserorders", async (req, res) => {
 });
 
 app.post("/api/food/addfood", async (req, res) => {
- try {
-  
-  const food = req.body.food;
-  const newFood = new Food({
-    name: food.name,
-    image: food.image,
-    description: food.description,
-    category: food.category,
-    prices: [food.prices],
-    variants: ["small", "medium", "large"],
-  });
-  await newFood.save();
-  res.send("Food Added")
+  try {
 
- } catch (error) {
-  return res.send({message:"Something went wrong"})
- }
+    const food = req.body.food;
+    const newFood = new Food({
+      name: food.name,
+      image: food.image,
+      description: food.description,
+      category: food.category,
+      prices: [food.prices],
+      variants: ["small", "medium", "large"],
+    });
+    await newFood.save();
+    res.send("Food Added")
+
+  } catch (error) {
+    return res.send({ message: "Something went wrong" })
+  }
+});
+
+
+app.get('/api/get/food/', async (req, res) => {
+  try {
+    const { id } = req.body;
+    const getFoodById = await Food.findOne({ id });
+    if (getFoodById) {
+      res.status(200).json(getFoodById)
+    }
+    else {
+      res.status(500).json("Food Not found")
+    }
+  } catch (error) {
+    return es.status(500).json("Internal server Error")
+  }
+});
+
+app.put("/api/edit/food", async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    const { EditFoodData } = req.body;
+    const newFood = new Food({
+      name: EditFoodData.name,
+      image: EditFoodData.image,
+      description: EditFoodData.description,
+      category: EditFoodData.category,
+      prices: [EditFoodData.prices],
+      variants: ["small", "medium", "large"],
+    });
+
+    console.log(newFood);
+
+    const updatedFood = await Food.findOneAndUpdate({ _id: id }, { newFood })
+    if (updatedFood) {
+      res.send(updatedFood)
+    } else {
+      res.send("Can't update")
+    }
+
+
+  } catch (error) {
+    return res.send({ message: "Something went wrong" })
+  }
 });
 
 app.listen(port, () => {
