@@ -233,10 +233,10 @@ app.post("/api/food/addfood", async (req, res) => {
 });
 
 
-app.get('/api/get/food/', async (req, res) => {
+app.get('/api/get/food/:id', async (req, res) => {
   try {
-    const { id } = req.body;
-    const getFoodById = await Food.findOne({ id });
+    const { id } = req.params;
+    const getFoodById = await Food.findOne({ _id:id });
     if (getFoodById) {
       res.status(200).json(getFoodById)
     }
@@ -248,34 +248,53 @@ app.get('/api/get/food/', async (req, res) => {
   }
 });
 
+
+
 app.put("/api/edit/food", async (req, res) => {
   try {
-    const { id } = req.body;
-
     const { EditFoodData } = req.body;
-    const newFood = new Food({
-      name: EditFoodData.name,
-      image: EditFoodData.image,
-      description: EditFoodData.description,
-      category: EditFoodData.category,
-      prices: [EditFoodData.prices],
-      variants: ["small", "medium", "large"],
-    });
+    const id=EditFoodData.id;
 
-    console.log(newFood);
+    const updatedFood = await Food.findOneAndUpdate(
+      { _id: id },
+      {
+          name: EditFoodData.name,
+          image: EditFoodData.image,
+          description: EditFoodData.description,
+          category: EditFoodData.category,
+          prices: [EditFoodData.prices],
+          variants: ["small", "medium", "large"],
 
-    const updatedFood = await Food.findOneAndUpdate({ _id: id }, { newFood })
+      },
+    );
     if (updatedFood) {
-      res.send(updatedFood)
+      res.send(updatedFood);
     } else {
-      res.send("Can't update")
+      res.send("Can't update");
     }
-
-
   } catch (error) {
-    return res.send({ message: "Something went wrong" })
+    return res.send(error)
   }
 });
+
+
+app.delete("/api/delete/food/:id", async (req, res) => {
+  try {
+    const {id}=req.params;
+    // console.log(id)
+
+    const deleteConfirm=await Food.findByIdAndDelete({_id:id})
+    if(deleteConfirm){
+      res.json("Deleted food");
+    }else{
+      res.json("Can't delete");
+    }
+   
+  } catch (error) {
+    return res.send(error)
+  }
+});
+
 
 app.listen(port, () => {
   console.log("http://localhost:3001");
