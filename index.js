@@ -87,6 +87,16 @@ app.post("/api/user/register", async (req, res) => {
   }
 });
 
+app.get("/api/all/user", async (req, res) => {
+  try {
+    const data = await User.find();
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json("Internal server error");
+  }
+});
+
+
 app.get("/api/food/getFoods", async (req, res) => {
   try {
     const data = await Food.find();
@@ -139,7 +149,7 @@ app.post("/api/user/login", async (req, res) => {
   }
 });
 
-app.post("/api/orders/placeorder", async (req, res) => {
+app.post("/api/orders/placeOrder", async (req, res) => {
   const { token, subTotal, currentUser, cartItems } = req.body;
   try {
     const customer = await stripe.customers.create({
@@ -202,7 +212,7 @@ const orderSchema = new mongoose.Schema(
 
 const Order = mongoose.model("Order", orderSchema);
 
-app.post("/api/orders/getuserorders", async (req, res) => {
+app.post("/api/orders/getUserOrders", async (req, res) => {
   const { userid } = req.body;
   try {
     const orders = await Order.find({ userid: userid }).sort({ _id: -1 });
@@ -212,7 +222,7 @@ app.post("/api/orders/getuserorders", async (req, res) => {
   }
 });
 
-app.post("/api/food/addfood", async (req, res) => {
+app.post("/api/food/addFood", async (req, res) => {
   try {
 
     const food = req.body.food;
@@ -236,7 +246,7 @@ app.post("/api/food/addfood", async (req, res) => {
 app.get('/api/get/food/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const getFoodById = await Food.findOne({ _id:id });
+    const getFoodById = await Food.findOne({ _id: id });
     if (getFoodById) {
       res.status(200).json(getFoodById)
     }
@@ -249,21 +259,53 @@ app.get('/api/get/food/:id', async (req, res) => {
 });
 
 
+app.get('/api/orders/get/all/orders', async (req, res) => {
+  try {
+    const getOrder = await Order.find()
+    if (getOrder) {
+      res.status(200).json(getOrder)
+    }
+    else {
+      res.status(500).json("Orders Not found")
+    }
+  } catch (error) {
+    return es.status(500).json("Internal server Error")
+  }
+});
+
+app.post('/api/order/delivery/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const order = await Order.findOne({ _id: id })
+    order.isDelivered = true;
+    const updatedOrNot = await order.save();
+    if (updatedOrNot) {
+      res.status(200).json("Completed")
+    }
+    else {
+      res.status(500).json("Orders Not found")
+    }
+  } catch (error) {
+    return res.status(500).json(error)
+  }
+});
+
+
 
 app.put("/api/edit/food", async (req, res) => {
   try {
     const { EditFoodData } = req.body;
-    const id=EditFoodData.id;
+    const id = EditFoodData.id;
 
     const updatedFood = await Food.findOneAndUpdate(
       { _id: id },
       {
-          name: EditFoodData.name,
-          image: EditFoodData.image,
-          description: EditFoodData.description,
-          category: EditFoodData.category,
-          prices: [EditFoodData.prices],
-          variants: ["small", "medium", "large"],
+        name: EditFoodData.name,
+        image: EditFoodData.image,
+        description: EditFoodData.description,
+        category: EditFoodData.category,
+        prices: [EditFoodData.prices],
+        variants: ["small", "medium", "large"],
 
       },
     );
@@ -280,16 +322,31 @@ app.put("/api/edit/food", async (req, res) => {
 
 app.delete("/api/delete/food/:id", async (req, res) => {
   try {
-    const {id}=req.params;
+    const { id } = req.params;
     // console.log(id)
 
-    const deleteConfirm=await Food.findByIdAndDelete({_id:id})
-    if(deleteConfirm){
+    const deleteConfirm = await Food.findByIdAndDelete({ _id: id })
+    if (deleteConfirm) {
       res.json("Deleted food");
-    }else{
+    } else {
       res.json("Can't delete");
     }
-   
+
+  } catch (error) {
+    return res.send(error)
+  }
+});
+
+app.delete("/api/delete/user/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleteConfirm = await User.findByIdAndDelete({ _id: id })
+    if (deleteConfirm) {
+      res.json("Deleted food");
+    } else {
+      res.json("Can't delete");
+    }
+
   } catch (error) {
     return res.send(error)
   }
