@@ -37,6 +37,8 @@ Feel free to contribute to the development of this server-side codebase. Create 
 
 ## Social Links
 
-- GitHub: [zamanmonirbu](https://github.com/zamanmonirbu)
-- LinkedIn: [mdmoniruzzamanbu](https://www.linkedin.com/in/mdmoniruzzamanbu)
-- Email: monir.cse6.bu@gmail.com
+Connect with me:
+
+- [LinkedIn](www.linkedin.com/in/mdmoniruzzamanbu)
+- [Netlify](https://moniruzzamanbu.netlify.app/)
+- [Medium](https://medium.com/@zamanmonirbu)
