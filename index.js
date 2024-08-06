@@ -40,5 +40,5 @@ app.use('/api', OrderRouters);
 
 app.listen(port, () => {
   mongoDBConnection();
-  console.log("http://localhost:3001");
+  console.log(`http://localhost:${port}`);
 });

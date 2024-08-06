@@ -1,4 +1,5 @@
 const User = require("../Model/UserModels");
+const Food = require('../Model/FoodModels');
 
 const userRegister = async (req, res) => {
     try {
@@ -35,5 +36,59 @@ const userLogin = async (req, res) => {
     }
 };
 
-
-module.exports = { userRegister, userLogin }
+const filterProduct = async (req, res) => {
+    try {
+      const { category, size, priceRange } = req.query;
+  
+      // Initialize the query object
+      let query = {};
+  
+      // Add category filter if specified
+      if (category) {
+        query.category = category;
+      }
+  
+      // Initialize an array to store $or conditions
+      let orConditions = [];
+  
+      // Add size filter if specified
+      if (size) {
+        orConditions.push({ 'variants': size });
+      }
+  
+      // Add price range filter if specified
+      if (priceRange) {
+        const priceQuery = buildPriceQuery(priceRange, size);
+        orConditions.push(priceQuery);
+      }
+  
+      // Combine all conditions with $or if any condition exists
+      if (orConditions.length > 0) {
+        query.$or = orConditions;
+      }
+  
+      // Fetch filtered food items
+      const foods = await Food.find(query);
+      res.json(foods);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error });
+    }
+  };
+  
+  // Helper function to build price range query
+  const buildPriceQuery = (priceRange, size) => {
+    const [min, max] = priceRange.split('-').map(Number);
+  
+    // Handle price range based on size
+    return {
+      $expr: {
+        $and: [
+          { $gte: [{ $arrayElemAt: [{ $filter: { input: "$prices", as: "price", cond: { $eq: ["$$price.size", size] } } }, 0] }, min] },
+          { $lte: [{ $arrayElemAt: [{ $filter: { input: "$prices", as: "price", cond: { $eq: ["$$price.size", size] } } }, 0] }, max] }
+        ]
+      }
+    };
+  };
+  
+  module.exports = { userRegister, userLogin, filterProduct };
+  

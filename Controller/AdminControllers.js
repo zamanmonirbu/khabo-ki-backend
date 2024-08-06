@@ -1,13 +1,13 @@
-const Food = require("../Model/FoodModels");
-const Order = require("../Model/OrderModels");
-const User = require("../Model/UserModels");
+const Food = require('../Model/FoodModels');
+const Order = require('../Model/OrderModels');
+const User = require('../Model/UserModels');
 
 const getAllUser = async (req, res) => {
     try {
         const data = await User.find();
         res.status(200).json(data);
     } catch (error) {
-        res.status(500).json("Internal server error");
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 
@@ -16,76 +16,78 @@ const getAllFood = async (req, res) => {
         const data = await Food.find();
         res.status(200).json(data);
     } catch (error) {
-        res.status(500).json("Internal server error");
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 
+
+// Add a new food item
 const addFood = async (req, res) => {
     try {
-
-        const food = req.body.food;
-        const newFood = new Food({
-            name: food.name,
-            image: food.image,
-            description: food.description,
-            category: food.category,
-            prices: [food.prices],
-            variants: ["small", "medium", "large"],
-        });
-        await newFood.save();
-        res.send("Food Added")
-
-    } catch (error) {
-        return res.send({ message: "Something went wrong" })
+      // Create a new instance of the Food model with data from the request body
+      const food = new Food({
+        id: req.body.id,
+        name: req.body.name,
+        variants: req.body.variants,
+        prices: req.body.prices,
+        category: req.body.category,
+        image: req.body.image,
+        description: req.body.description,
+      
+      });
+  
+      // Save the new food item to the database
+      const newFood = await food.save();
+  
+      // Respond with the newly created food item
+      res.status(201).json(newFood);
+    } catch (err) {
+      // Respond with a 400 status code and the error message if something goes wrong
+      res.status(400).json({ message: err.message });
     }
-};
-
+  };
+  
 
 const getSpecificFood = async (req, res) => {
     try {
         const { id } = req.params;
         const getFoodById = await Food.findOne({ _id: id });
         if (getFoodById) {
-            res.status(200).json(getFoodById)
-        }
-        else {
-            res.status(500).json("Food Not found")
+            res.status(200).json(getFoodById);
+        } else {
+            res.status(404).json({ message: "Food Not found" });
         }
     } catch (error) {
-        return es.status(500).json("Internal server Error")
+        res.status(500).json({ message: "Internal server Error" });
     }
 };
-
 
 const allOrders = async (req, res) => {
     try {
-        const getOrder = await Order.find()
+        const getOrder = await Order.find();
         if (getOrder) {
-            res.status(200).json(getOrder)
-        }
-        else {
-            res.status(500).json("Orders Not found")
+            res.status(200).json(getOrder);
+        } else {
+            res.status(404).json({ message: "Orders Not found" });
         }
     } catch (error) {
-        return es.status(500).json("Internal server Error")
+        res.status(500).json({ message: "Internal server Error" });
     }
 };
-
 
 const orderCompleteOrNot = async (req, res) => {
     try {
         const { id } = req.params;
-        const order = await Order.findOne({ _id: id })
-        order.isDelivered = true;
-        const updatedOrNot = await order.save();
-        if (updatedOrNot) {
-            res.status(200).json("Completed")
-        }
-        else {
-            res.status(500).json("Orders Not found")
+        const order = await Order.findOne({ _id: id });
+        if (order) {
+            order.isDelivered = true;
+            const updatedOrder = await order.save();
+            res.status(200).json({ message: "Completed" });
+        } else {
+            res.status(404).json({ message: "Order Not found" });
         }
     } catch (error) {
-        return res.status(500).json(error)
+        res.status(500).json({ message: "Internal server Error" });
     }
 };
 
@@ -94,6 +96,18 @@ const editFood = async (req, res) => {
         const { EditFoodData } = req.body;
         const id = EditFoodData.id;
 
+        // Convert prices to numbers
+        const prices = [
+            { size: 'small', price: parseFloat(EditFoodData.prices.small) },
+            { size: 'medium', price: parseFloat(EditFoodData.prices.medium) },
+            { size: 'large', price: parseFloat(EditFoodData.prices.large) }
+        ];
+
+        // Validate that prices are valid numbers
+        if (prices.some(p => isNaN(p.price))) {
+            return res.status(400).json({ message: "Invalid price values" });
+        }
+
         const updatedFood = await Food.findOneAndUpdate(
             { _id: id },
             {
@@ -101,51 +115,48 @@ const editFood = async (req, res) => {
                 image: EditFoodData.image,
                 description: EditFoodData.description,
                 category: EditFoodData.category,
-                prices: [EditFoodData.prices],
-                variants: ["small", "medium", "large"],
-
+                prices,
+                variants: ['small', 'medium', 'large'],
             },
+            { new: true } // Return the updated document
         );
+
         if (updatedFood) {
-            res.send(updatedFood);
+            res.status(200).json(updatedFood);
         } else {
-            res.send("Can't update");
+            res.status(404).json({ message: "Can't update" });
         }
     } catch (error) {
-        return res.send(error)
+        res.status(500).json({ message: "Internal server Error" });
     }
 };
 
 const deleteFood = async (req, res) => {
     try {
         const { id } = req.params;
-        const deleteConfirm = await Food.findByIdAndDelete({ _id: id })
+        const deleteConfirm = await Food.findByIdAndDelete({ _id: id });
         if (deleteConfirm) {
-            res.json("Deleted food");
+            res.status(200).json({ message: "Deleted food" });
         } else {
-            res.json("Can't delete");
+            res.status(404).json({ message: "Can't delete" });
         }
-
     } catch (error) {
-        return res.send(error)
+        res.status(500).json({ message: "Internal server Error" });
     }
 };
 
 const deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const deleteConfirm = await User.findByIdAndDelete({ _id: id })
+        const deleteConfirm = await User.findByIdAndDelete({ _id: id });
         if (deleteConfirm) {
-            res.json("Deleted food");
+            res.status(200).json({ message: "Deleted user" });
         } else {
-            res.json("Can't delete");
+            res.status(404).json({ message: "Can't delete" });
         }
-
     } catch (error) {
-        return res.send(error)
+        res.status(500).json({ message: "Internal server Error" });
     }
-}
+};
 
 module.exports = { getAllUser, getAllFood, addFood, getSpecificFood, allOrders, orderCompleteOrNot, editFood, deleteFood, deleteUser };
-
-
