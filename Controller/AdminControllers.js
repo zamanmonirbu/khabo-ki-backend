@@ -24,28 +24,30 @@ const getAllFood = async (req, res) => {
 // Add a new food item
 const addFood = async (req, res) => {
     try {
-      // Create a new instance of the Food model with data from the request body
-      const food = new Food({
-        id: req.body.id,
-        name: req.body.name,
-        variants: req.body.variants,
-        prices: req.body.prices,
-        category: req.body.category,
-        image: req.body.image,
-        description: req.body.description,
-      
-      });
+      const { name, smallPrice, mediumPrice, largePrice, image, description, category } = req.body.food;
   
-      // Save the new food item to the database
-      const newFood = await food.save();
+      const foodData = {
+        name,
+        variants: ["small", "medium", "large"],
+        prices: {
+          small: smallPrice,
+          medium: mediumPrice,
+          large: largePrice
+        },
+        category,
+        image,
+        description
+      };
+
   
-      // Respond with the newly created food item
+      const newFood = new Food(foodData);  
+      await newFood.save();
       res.status(201).json(newFood);
-    } catch (err) {
-      // Respond with a 400 status code and the error message if something goes wrong
-      res.status(400).json({ message: err.message });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
     }
   };
+  
   
 
 const getSpecificFood = async (req, res) => {
