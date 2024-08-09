@@ -5,6 +5,7 @@ const stripe_key = process.env.STRIPE_KEY;
 const stripe = require("stripe")(stripe_key);
 
 const { v4: uuidv4 } = require("uuid");
+const Food = require("../Model/FoodModels");
 
 const placementOrder = async (req, res) => {
     const { token, subTotal, currentUser, cartItems } = req.body;
@@ -61,4 +62,57 @@ const getAllOrdersByUser = async (req, res) => {
     }
 };
 
-module.exports = { placementOrder, getAllOrdersByUser }
+const mongoose = require('mongoose');
+const ObjectId = mongoose.Types.ObjectId;
+
+const getMostOrderedFoods = async (req, res) => {
+    try {
+        const mostOrderedFoods = await Order.aggregate([
+            { $unwind: "$orderItems" }, // Flatten the orderItems array
+            { 
+                $group: { 
+                    _id: "$orderItems._id", 
+                    count: { $sum: { $toInt: "$orderItems.quantity" } } 
+                } 
+            }, // Group by foodId and sum quantities
+            { $sort: { count: -1 } }, // Sort by count in descending order
+            { 
+                $lookup: { 
+                    from: "foods", // Name of the foods collection
+                    let: { foodId: "$_id" },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", { $toObjectId: "$$foodId" }] } } }
+                    ],
+                    as: "foodDetails" 
+                } 
+            },
+            { $unwind: "$foodDetails" }, // Flatten the foodDetails array
+            // { 
+            //     $project: { 
+            //         _id: 0, 
+            //         foodId: "$_id", 
+            //         count: 1, 
+            //         name: "$foodDetails.name", 
+            //         price: "$foodDetails.prices" 
+            //     } 
+            // }
+        ]);
+
+        if (mostOrderedFoods.length > 0) {
+            res.status(200).json(mostOrderedFoods);
+        } else {
+            res.status(404).json({ message: "No data found" });
+        }
+    } catch (error) {
+        console.error("Error fetching most ordered foods:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
+
+
+
+
+
+module.exports = { placementOrder, getAllOrdersByUser,getMostOrderedFoods }

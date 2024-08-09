@@ -13,8 +13,7 @@ const getAllUser = async (req, res) => {
 
 const getAllFood = async (req, res) => {
     try {
-        // Fetch foods sorted by createdAt in descending order
-        const data = await Food.find().sort({ createdAt: -1 }); // Assuming 'createdAt' is the date field
+        const data = await Food.find().sort({ createdAt: -1 }); 
         res.status(200).json(data);
     } catch (error) {
         console.error("Error fetching foods:", error);
