@@ -14,7 +14,7 @@ const getAllUser = async (req, res) => {
 const getAllFood = async (req, res) => {
     try {
         const data = await Food.find().sort({ createdAt: -1 }); 
-        res.status(200).json(data);
+        res.status(200).json(data.slice(0, 8));
     } catch (error) {
         console.error("Error fetching foods:", error);
         res.status(500).json({ message: "Internal server error" });
