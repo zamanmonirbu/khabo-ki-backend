@@ -61,7 +61,6 @@ const getAllOrdersByUser = async (req, res) => {
         return res.status(400).json({ message: "Something went wrong" });
     }
 };
-
 const mongoose = require('mongoose');
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -99,7 +98,8 @@ const getMostOrderedFoods = async (req, res) => {
         ]);
 
         if (mostOrderedFoods.length > 0) {
-            res.status(200).json(mostOrderedFoods);
+            // Send only the first 4 items
+            res.status(200).json(mostOrderedFoods.slice(0, 4));
         } else {
             res.status(404).json({ message: "No data found" });
         }
